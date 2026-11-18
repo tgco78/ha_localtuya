@@ -48,7 +48,7 @@ MODE_WHITE = "white"
 SCENE_CUSTOM = "Custom"
 SCENE_MUSIC = "Music"
 
-MODES_SET = {"Colour, Music, Scene and White": 0, "Manual, Music, Scene and White": 1}
+MODES_SET = {"Colour, Music, Scene and White": 0, "Manual, Music, Scene and White": 1, "Color, Music, Scene and White": 2}
 
 SCENE_LIST_RGBW_1000 = {
     "Night": "000e0d0000000000000000c80000",
@@ -106,7 +106,7 @@ class Mode:
         default = {"Default": self.white}
         return {**default, "Mode Color": self.color, "Mode Scene": self.scene}
 
-MAP_MODE_SET = {0: Mode(), 1: Mode(color=MODE_MANUAL)}
+MAP_MODE_SET = {0: Mode(), 1: Mode(color=MODE_MANUAL), 2: Mode(color="color")}
 
 
 def map_range(value, from_lower, from_upper, to_lower, to_upper):
@@ -129,6 +129,7 @@ def flow_schema(dps):
             vol.Coerce(int), vol.Range(min=0, max=10000)
         ),
         vol.Optional(CONF_COLOR_MODE): vol.In(dps),
+        vol.Optional(CONF_COLOR_MODE_SET, default=0): vol.In(MODES_SET),
         vol.Optional(CONF_COLOR): vol.In(dps),
         vol.Optional(CONF_COLOR_TEMP_MIN_KELVIN, default=DEFAULT_MIN_KELVIN): vol.All(
             vol.Coerce(int), vol.Range(min=1500, max=8000)
@@ -179,7 +180,10 @@ class LocaltuyaLight(LocalTuyaEntity, LightEntity):
         self._color_temp_reverse = self._config.get(
             CONF_COLOR_TEMP_REVERSE, DEFAULT_COLOR_TEMP_REVERSE
         )
-        self._modes = MAP_MODE_SET[int(self._config.get(CONF_COLOR_MODE_SET, 0))]
+        mode_set = self._config.get(CONF_COLOR_MODE_SET, 0)
+        if isinstance(mode_set, str):
+            mode_set = MODES_SET.get(mode_set, 0)
+        self._modes = MAP_MODE_SET[int(mode_set)]
         self._hs = None
         self._effect = None
         self._effect_list = []
@@ -400,7 +404,7 @@ class LocaltuyaLight(LocalTuyaEntity, LightEntity):
                         round(self._hs[0]), round(self._hs[1] * 10.0), brightness
                     )
                 states[self._config.get(CONF_COLOR)] = color
-                states[self._config.get(CONF_COLOR_MODE)] = MODE_COLOR
+                states[self._config.get(CONF_COLOR_MODE)] = self._modes.color
 
         if ATTR_HS_COLOR in kwargs and ColorMode.HS in self.supported_color_modes:
             if brightness is None:
@@ -427,7 +431,7 @@ class LocaltuyaLight(LocalTuyaEntity, LightEntity):
                         round(hs[0]), round(hs[1] * 10.0), brightness
                     )
                 states[self._config.get(CONF_COLOR)] = color
-                states[self._config.get(CONF_COLOR_MODE)] = MODE_COLOR
+                states[self._config.get(CONF_COLOR_MODE)] = self._modes.color
 
         if ColorMode.COLOR_TEMP in kwargs and ColorMode.COLOR_TEMP in self.supported_color_modes:
             if brightness is None:
