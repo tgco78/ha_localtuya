@@ -6,29 +6,21 @@ on:
 
 jobs:
   build:
-    name: >-
-      ${{ matrix.python-version }}
-      /
-      ${{ matrix.platform }}
-    runs-on: ${{ matrix.platform }}
-    strategy:
-      matrix:
-        platform:
-          - ubuntu-latest
-        python-version:
-          - "3.11"
+    name: Python 3.11 / ubuntu-latest
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install tox
         run: |
-          python -m pip install --upgrade setuptools pip
-          python -m pip install "tox>=4,<5" "tox-gh-actions>=3,<4"
+          python -m pip install --upgrade pip
+          python -m pip install "tox>=4,<5"
 
       - name: Run tox
-        run: tox -q -p auto
+        run: tox -q -e py311
